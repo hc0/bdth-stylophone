@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>半岛铁盒 · Web Stylophone</title>
+  </head>
+  <body>
+    <div id="compat-banner" class="banner" hidden>
+      当前浏览器不支持 Web Audio API，无法发声。请换用最新版 Chrome、Edge 或 Safari。
+    </div>
+
+    <main class="device">
+      <header class="device-head">
+        <div class="brand">
+          <span id="status-led" class="led" data-state="off"></span>
+          <div>
+            <h1>STYLOPHONE</h1>
+            <p class="sub">半岛铁盒 · 按住滑动演奏</p>
+          </div>
+        </div>
+        <div id="ctx-status" class="status-pill">未启动</div>
+      </header>
+
+      <section class="meters" aria-hidden="true">
+        <canvas id="wave-canvas" class="meter"></canvas>
+        <canvas id="spec-canvas" class="meter"></canvas>
+      </section>
+
+      <section class="main-bar">
+        <label class="ctrl">
+          <span>音量</span>
+          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.28" />
+        </label>
+        <label class="chip">
+          <input id="vibrato" type="checkbox" checked />
+          颤音
+        </label>
+        <label class="ctrl">
+          <span>波形</span>
+          <select id="waveform">
+            <option value="square" selected>方波</option>
+            <option value="sawtooth">锯齿波</option>
+            <option value="triangle">三角波</option>
+          </select>
+        </label>
+        <div class="octave" role="group" aria-label="八度">
+          <span>八度</span>
+          <button type="button" data-oct="-2">-2</button>
+          <button type="button" data-oct="-1">-1</button>
+          <button type="button" class="on" data-oct="0">0</button>
+          <button type="button" data-oct="1">+1</button>
+          <button type="button" data-oct="2">+2</button>
+        </div>
+        <label class="ctrl">
+          <span>音色</span>
+          <select id="preset"></select>
+        </label>
+        <label class="ctrl">
+          <span>示范</span>
+          <select id="demo-song"></select>
+        </label>
+        <button type="button" id="demo" class="primary">播放</button>
+        <button type="button" id="advanced-toggle" class="ghost" aria-expanded="false">高级设置</button>
+      </section>
+
+      <div id="vibrato-extra" class="sub-bar">
+        <label class="ctrl">
+          <span>颤音速度</span>
+          <input id="vibrato-rate" type="range" min="2" max="12" step="0.1" value="5.8" />
+        </label>
+        <label class="ctrl">
+          <span>颤音深度</span>
+          <input id="vibrato-depth" type="range" min="0" max="80" step="1" value="28" />
+        </label>
+      </div>
+
+      <section class="play-deck">
+        <div id="pitch-bend" class="pitch-bend" title="上下拖动弯音">
+          <span>BEND</span>
+        </div>
+        <div id="keyboard" class="keyboard"></div>
+      </section>
+
+      <section id="advanced-panel" class="advanced" hidden>
+        <div class="adv-grid">
+          <fieldset>
+            <legend>硬件还原</legend>
+            <label class="ctrl">
+              <span>低通滤波</span>
+              <input id="filter" type="range" min="280" max="12000" step="10" value="11000" />
+            </label>
+            <label class="chip"><input id="distortion" type="checkbox" /> 失真</label>
+            <label class="ctrl">
+              <span>噪声混合</span>
+              <input id="noise" type="range" min="0" max="1" step="0.01" value="0" />
+            </label>
+            <label class="chip"><input id="hiss" type="checkbox" /> 电路底噪</label>
+            <label class="chip"><input id="adsr-on" type="checkbox" /> ADSR</label>
+            <div id="adsr-extra" class="nested" hidden>
+              <label class="ctrl">起音 A <input id="attack" type="range" min="0.003" max="0.4" step="0.001" value="0.01" /></label>
+              <label class="ctrl">衰减 D <input id="decay" type="range" min="0.01" max="0.6" step="0.01" value="0.08" /></label>
+              <label class="ctrl">延音 S <input id="sustain" type="range" min="0" max="1" step="0.01" value="0.75" /></label>
+              <label class="ctrl">释放 R <input id="release" type="range" min="0.02" max="0.8" step="0.01" value="0.06" /></label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>演奏</legend>
+            <label class="chip"><input id="portamento" type="checkbox" /> 滑音</label>
+            <label id="glide-row" class="ctrl" hidden>滑音时间 <input id="glide" type="range" min="0.02" max="0.4" step="0.01" value="0.08" /></label>
+            <label class="chip"><input id="hold" type="checkbox" /> Hold 保持</label>
+            <label class="chip"><input id="chord" type="checkbox" /> 和弦模式</label>
+            <div class="btn-row">
+              <button type="button" id="preset-save">保存当前音色</button>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>工具</legend>
+            <div class="btn-row">
+              <button type="button" id="ref-a4">A4 440Hz</button>
+              <button type="button" id="midi-in">连接 MIDI</button>
+            </div>
+            <label class="chip"><input id="metronome" type="checkbox" /> 节拍器</label>
+            <label class="chip"><input id="random" type="checkbox" /> 随机音符</label>
+            <label id="bpm-row" class="ctrl" hidden>
+              <span>速度 BPM</span>
+              <input id="bpm" type="range" min="40" max="180" step="1" value="96" />
+            </label>
+            <div class="btn-row">
+              <button type="button" id="rec-seq">录制旋律</button>
+              <button type="button" id="play-seq">回放</button>
+              <button type="button" id="export-midi">导出 MIDI 文本</button>
+              <button type="button" id="rec-wav">录制 WAV</button>
+            </div>
+            <p id="tool-msg" class="tool-msg"></p>
+          </fieldset>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
